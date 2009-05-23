@@ -7,7 +7,10 @@ channels '#orlando';
 
 use Flexo::Invite;
 
-plugins FlexoInvite => 'Flexo::Invite';
+plugins(
+    FlexoInvite => 'Flexo::Invite',
+    FlexoDahut  => 'Flexo::Dahut',
+);
 
 __PACKAGE__->run unless caller;
 
