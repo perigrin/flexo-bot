@@ -87,19 +87,5 @@ sub S_public {
     return PCI_EAT_NONE;
 }
 
-=for example
-sub hey_baby 
-	:Public(  $RE{PUBLIC}{hey_baby} ) 
-	:Public(  $RE{PUBLIC}{how_you_doin} )
-{
-	my ($self, $irc, $ctxt) = @_;
-	my $nick = (split(/!/, $ctxt->{nickstring}))[0];
-	my @channels = @{ $ctxt->{channels} };
-	for my $channel (@channels) {
-		$irc->yield(privmsg => $channel => $nick . ': ' . pickup);
-	}
-}
-=cut
-
 1;
 __END__
