@@ -1,4 +1,4 @@
-package Flexo::Invite;
+package Flexo::Plugin::Invite;
 use Moses::Plugin;
 use namespace::autoclean;
 

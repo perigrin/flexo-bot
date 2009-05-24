@@ -1,4 +1,4 @@
-package Flexo::Barfly;
+package Flexo::Plugin::Barfly;
 use Moses::Plugin;
 use Regexp::Common qw(IRC pattern);
 use Bone::Easy qw(pickup);

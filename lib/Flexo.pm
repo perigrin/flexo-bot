@@ -1,19 +1,20 @@
 package Flexo;
 use Moses;
-use namespace::autoclean;
+
+use Module::Pluggable (
+    search_path => ["Flexo::Plugin"],
+    sub_name    => 'plugin_classes',
+);
 
 server 'irc.perl.org';
 channels '#orlando';
 
-use Flexo::Invite;
-
-plugins(
-    FlexoInvite => 'Flexo::Invite',
-    FlexoDahut  => 'Flexo::Dahut',
-    FlexoBarfly => 'Flexo::Barfly',
-);
+sub custom_plugins {
+    return { map { $_ => $_ } $_[0]->plugin_classes };
+}
 
 __PACKAGE__->run unless caller;
 
+no Moses;
 1;
 __END__

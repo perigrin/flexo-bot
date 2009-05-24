@@ -1,4 +1,4 @@
-package Flexo::Dahut;
+package Flexo::Plugin::Dahut;
 use Moses::Plugin;
 use namespace::autoclean;
 
