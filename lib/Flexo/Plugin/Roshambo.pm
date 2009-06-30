@@ -1,6 +1,7 @@
 package Flexo::Plugin::Roshambo;
 use Moses::Plugin;
 use Games::Roshambo;
+use MooseX::AttributeHelpers;
 use List::Util qw(shuffle);
 
 use namespace::autoclean;
@@ -10,8 +11,8 @@ events qw(bot_addressed msg);
 has lines => (
     isa        => 'ArrayRef',
     is         => 'ro',
-    auto_deref => 1,
     lazy_build => 1,
+    auto_deref => 1,
 );
 
 sub _build_lines {
@@ -22,6 +23,9 @@ sub _build_lines {
     ];
 }
 
+# TODO: This whole method could be easily turned into
+#       a MX::AH curried subroutine if MX::AH had a shuffle() in the Array
+#       method providers
 sub line {
     my ( $self, $winner, $choice ) = @_;
     my ($line) = shuffle $self->lines;
@@ -40,9 +44,10 @@ has rps => (
 sub _build_rps { Games::Roshambo->new( numthrows => 101 ) }
 
 sub play {
-    my ( $self, $you, $from ) = @_;
+    my ( $self, $you, $player ) = @_;
     my $me = $self->rps->gen_throw;
-    my $winner = ( 'nobody', $from, $self->nick )[ $self->judge( $you, $me ) ];
+    my $winner =
+      ( 'Nobody', $player, $self->nick )[ $self->judge( $you, $me ) ];
     return $self->line( $winner, $self->rps->num_to_name($me), );
 }
 
