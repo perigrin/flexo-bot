@@ -2,8 +2,6 @@ package Flexo::Plugin::Invite;
 use Moses::Plugin;
 use namespace::autoclean;
 
-events qw(invite bot_addressed);
-
 sub S_invite {
     my ( $self, $irc, $nickstr, $channel ) = @_;
     $irc->yield( join => $$channel );

@@ -5,8 +5,6 @@ use Bone::Easy qw(pickup);
 
 use namespace::autoclean;
 
-events qw(msg bot_addressed public);
-
 my $NICK         = $RE{IRC}{nick}{-keep};
 my $CHANNEL      = $RE{IRC}{channel}{-keep};
 my $hey_baby     = qq[^hey\\s+baby[!?.]*];

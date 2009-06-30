@@ -2,8 +2,6 @@ package Flexo::Plugin::Dahut;
 use Moses::Plugin;
 use namespace::autoclean;
 
-events qw(public);
-
 use Acme::Dahut::Call;
 use Acme::Dahut::Call::Identifier;
 

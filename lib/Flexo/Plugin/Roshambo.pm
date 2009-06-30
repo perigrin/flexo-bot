@@ -6,8 +6,6 @@ use List::Util qw(shuffle);
 
 use namespace::autoclean;
 
-events qw(bot_addressed msg);
-
 has lines => (
     isa        => 'ArrayRef',
     is         => 'ro',

@@ -4,8 +4,6 @@ use Moses::Plugin;
 
 use Regexp::Common qw(IRC pattern);
 
-events qw(join mode nick public bot_addressed);
-
 has untrusted_channels => (
     isa        => 'HashRef[Str]',
     is         => 'ro',
