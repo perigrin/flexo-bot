@@ -16,13 +16,13 @@ has untrusted_channels => (
 
 sub build_untrusted_channels => ( { '#perl' => 1, } );
 
-has model => (
-    isa        => 'Flexo::Plugin::Model',
+has storage => (
+    isa        => 'Flexo::Storage',
     is         => 'ro',
     lazy_build => 1,
 );
 
-sub _build_model { Flexo::Plugin::Model->new( dsn => 'hash' ) }
+sub _build_storage { Flexo::Storage->new( dsn => 'hash' ) }
 
 ##########################
 # Plugin related methods #

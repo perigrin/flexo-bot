@@ -4,9 +4,10 @@ use namespace::autoclean;
 
 extends qw(KiokuX::Layer8::Storage);
 
-sub get_user_by_nick {
+sub get_irc_identity {
     my ( $self, $nick ) = @_;
-    ( $self->search( { nickstr => $nick } )->next )[0];
+    my $stream = $self->search( { nickstr => $nick } );
+    ( $stream->next )[0][0];
 }
 
 1;
