@@ -1,18 +1,109 @@
 package Flexo::Plugin::Trust;
 use 5.10.0;
 use Moses::Plugin;
-
 use Regexp::Common qw(IRC pattern);
 
-has untrusted_channels => (
-    isa        => 'HashRef[Str]',
-    is         => 'ro',
-    lazy_build => 1,
-    metaclass  => 'Collection::Hash',
-    provides   => { exists => 'is_untrusted_channel' },
-);
+use namespace::autoclean;
 
-sub build_untrusted_channels => ( { '#perl' => 1, } );
+sub S_bot_addressed {
+    my ( $self, $irc, $nickstr, $channel, $msg ) = @_;
+    return PCI_EAT_NONE unless $$msg;
+
+    my $command = $self->get_command( $$nickstr, $$channel->[0], $$msg );
+    return PCI_EAT_NONE unless $command;
+
+    if ( my $return = $self->run_command($command) ) {
+        $self->privmsg( $$channel->[0] => $return );
+        return PCI_EAT_PLUGIN;
+    }
+
+    return PCI_EAT_NONE;
+}
+
+__PACKAGE__->meta->add_method( S_msg    => \&S_bot_addressed );
+__PACKAGE__->meta->add_method( S_public => \&S_bot_addressed );
+
+around S_public => sub {
+    my $next = shift;
+    warn map { $$_ } @_;
+    return PCI_EAT_NONE unless $$_[5] =~ s/^opbots[:,]?\s+//i;
+    $next->(@_);
+};
+
+#
+# PARSER
+#
+
+# REGEXES
+my $NICK            = $RE{IRC}{nick}{-keep}{ -count => 20 };
+my $CHANNEL         = $RE{IRC}{channel}{-keep};
+my $COMMAND         = q[(?k:trust|distrust|believe|disbelieve)];
+my $in_channel      = qq[(?:in\\s+$CHANNEL)?];
+my $spread_the_love = q[(?:spread\s+(?:the\s+love|ops))];
+my $check           = q[(?:do\\s+you|check)];
+pattern
+  name   => [qw(COMMAND trust -keep)],
+  create => qq[^$COMMAND\\s+$NICK\\s*${in_channel}[?.!]*],
+  ;
+
+pattern
+  name   => [qw(COMMAND check -keep)],
+  create => qq[^$check\\s+$COMMAND\\s+$NICK\\s*${in_channel}[?.!]*],
+  ;
+
+pattern
+  name   => [qw(COMMAND spread_ops -keep)],
+  create => qq[^(?:$spread_the_love|names)\\s*${in_channel}[?.!]*],
+  ;
+
+sub get_command {
+    my ( $self, $nickstr, $where, $msg ) = @_;
+    my $command = { by => $nickstr };
+    given ($msg) {
+        when ( $_ =~ $RE{COMMAND}{trust}{-keep} ) {
+            warn "trust";
+            $command->{method}  = $1;
+            $command->{target}  = $2;
+            $command->{channel} = $3 // $where;
+        }
+        when ( $_ =~ $RE{COMMAND}{check}{-keep} ) {
+            warn "check";
+            $command->{method}  = "check_${1}";
+            $command->{target}  = $2;
+            $command->{channel} = $3 // $where;
+        }
+        when ( $_ =~ $RE{COMMAND}{spread_ops}{-keep} ) {
+            warn "spread ops";
+            $command->{method} = 'spread_ops';
+            $command->{channel} = $2 // $where;
+        }
+        default { warn "$msg doesn't match"; return; };
+    }
+    return $command;
+}
+
+#
+# COMMANDS
+#
+
+sub run_command {
+    my ( $self, $command ) = @_;
+    my $method = $self->can( $command->{method} ) // return;
+    return $self->$method($command);
+}
+
+sub trust            { 'trust' }
+sub check_trust      { 'check trust' }
+sub distrust         { 'distrust' }
+sub check_distrust   { 'distrust' }
+sub believe          { 'believe' }
+sub check_believe    { 'check believe' }
+sub disbelieve       { 'disbelieve' }
+sub check_disbelieve { 'check disbelieve' }
+sub spread_ops       { 'spread ops' }
+
+1;
+__END__
 
 has model => (
     isa        => 'Flexo::Plugin::Model',
@@ -21,143 +112,6 @@ has model => (
 );
 
 sub _build_model { Flexo::Plugin::Model->new( dsn => 'hash' ) }
-
-##########################
-# Plugin related methods #
-##########################
-
-# REGEXES
-my $NICK            = $RE{IRC}{nick}{-keep}{ -count => 20 };
-my $CHANNEL         = $RE{IRC}{channel}{-keep};
-my $COMMAND         = q[(?k:trust|distrust|believe|disbelieve)];
-my $in_channel      = qq[(?:in\\s+$CHANNEL)?];
-my $spread_the_love = q[(?:spread(?:\s+the\s+love|ops))];
-my $check           = q[(?:do\\s+you|check)];
-pattern
-  name   => [qw(COMMAND trust -keep)],
-  create => qq[^$COMMAND\\s+$NICK\\s*$in_channel[?.!]*],
-  ;
-
-pattern
-  name   => [qw(COMMAND check -keep)],
-  create => qq[^$check\\s+$RE{COMMAND}{trust}{-keep}],
-  ;
-
-pattern
-  name   => [qw(COMMAND spread_ops -keep)],
-  create => qq[^(?:$spread_the_love|names)\\s*$in_channel[?.!]*],
-  ;
-
-sub S_bot_addressed {
-    my ( $self, $irc ) = splice @_, 0, 2;
-
-    my $msg = $$_[2] || return PCI_EAT_NONE;
-
-    my $channel = $$_[1]->[0];
-    return PCI_EAT_NONE if $self->is_untrusted_channel($channel) );
-
-    my ( $nick, $user, $host ) = parse_user( ${ $_[0] } );
-
-    given ($msg) {
-          when ( $RE{COMMAND}{trust}{-keep} ) {
-              my ( $command, $nick, $target ) = ( $1, $2, $3 );
-              $target //= $channel;
-              my $nick = $self->long_form($nick);
-              $self->$command( $nick => $target );
-          }
-          when ( $RE{COMMAND}{check}{-keep} ) {
-              my ( $command, $nick, $target ) = ( $1, $2, $3 );
-              my $method = "is_{$command}ed";
-              my $nick   = $self->long_form($nick);
-              $target //= $channel;
-
-              my $check = "$command $nick in $target";
-              $self->$command( $nick => $target )
-                ? $self->privmsg( $channel => "Yes, I $check." )
-                : $self->privmsg( $channel => "No, I don't $check." );
-          }
-          when ( $RE{COMMAND}{spread_ops}{-keep} ) {
-              my $target = $1 // $channel;
-              $self->spread_ops($target);
-          }
-          default { return PCI_EAT_NONE; };
-    }
-
-    return PCI_EAT_PLUGIN;
-}
-
-# alias S_irc_bot_addressed to S_msg because they do the same thing
-__PACKAGE__->meta->add_method( S_msg => \&S_bot_addressed );
-
-sub S_public {
-      my ( $self, $irc ) = splice @_, 0, 2;
-      ( my $msg = $$_[2] ) =~ s/^opbots[:,]?\s+//i || return PCI_EAT_NONE;
-      my $channel = $$_[1]->[0];
-      return PCI_EAT_NONE if $self->is_untrusted_channel($channel) );
-
-      my ( $nick, $user, $host ) = parse_user( ${ $_[0] } );
-
-      given ($msg) {
-            when ( $RE{COMMAND}{trust}{-keep} ) {
-                my ( $command, $nick, $target ) = ( $1, $2, $3 );
-                $target //= $channel;
-                my $nick = $self->long_form($nick);
-                $self->$command( $nick => $target );
-            }
-            when ( $RE{COMMAND}{check}{-keep} ) {
-                my ( $command, $nick, $target ) = ( $1, $2, $3 );
-                my $method = "is_{$command}ed";
-                my $nick   = $self->long_form($nick);
-                $target //= $channel;
-
-                my $check = "$command $nick in $target";
-                $self->$command( $nick => $target )
-                  ? $self->privmsg( $channel => "Yes, I $check." )
-                  : $self->privmsg( $channel => "No, I don't $check." );
-            }
-            when ( $RE{COMMAND}{spread_ops}{-keep} ) {
-                my $target = $1 // $channel;
-                $self->spread_ops($target);
-            }
-            default { return PCI_EAT_NONE; };
-      }
-
-      return PCI_EAT_PLUGIN;
-}
-
-sub trust {
-      my ( $self, $nick, $channel ) = @_;
-      return 1 if $self->get_user_by_nick($nick)->add_channel_op($channel);
-      return 0;
-}
-
-sub is_trusted {
-      my ( $self, $nick, $channel ) = @_;
-      return 1 if $self->get_user_by_nick($nick)->has_channel_op($channel);
-      return 0;
-}
-
-sub is_distrusted {
-      my ( $self, $nick, $channel ) = @_;
-      return !$self->is_trusted( $nick, $channel );
-}
-
-sub is_believed {
-      my ( $self, $nick, $channel ) = @_;
-      return 1 if $self->get_user_by_nick($nick)->has_channel_voice($channel);
-      return 0;
-}
-
-sub is_disbelieve {
-      my ( $self, $nick, $channel ) = @_;
-      return !$self->is_believed( $nick, $channel );
-}
-
-sub is_halfop {
-      my ( $self, $nick, $channel ) = @_;
-      return 1 if $self->get_user_by_nick($nick)->has_channel_halfop($channel);
-      return 0;
-}
 
 1;
 __END__
