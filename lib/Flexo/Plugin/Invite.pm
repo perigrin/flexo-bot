@@ -17,5 +17,7 @@ sub S_bot_addressed {
     return PCI_EAT_NONE;
 }
 
+__PACKAGE__->meta->add_method( S_msg => \&S_bot_addressed );
+
 1;
 __END__
