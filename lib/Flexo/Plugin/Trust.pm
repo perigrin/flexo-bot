@@ -5,6 +5,20 @@ use Regexp::Common qw(IRC pattern);
 
 use namespace::autoclean;
 
+duck_type 'TrustAPI' map { "check_${_}", $_ }
+  qw(trust distrust believe disbelieve);
+
+has storage => (
+    isa        => $Trust,
+    is         => 'ro',
+    handles    => $Trust,
+    lazy_build => 1,
+);
+
+sub _build_storage {
+    Flexo::Plugin::Trust::SimpleStorage->new_from_trustfile();
+}
+
 sub S_bot_addressed {
     my ( $self, $irc, $nickstr, $channel, $msg ) = @_;
     return PCI_EAT_NONE unless $$msg;
@@ -101,22 +115,10 @@ sub run_command {
     return $self->$method_output($output);
 }
 
-sub trust {
-    my ( $self, $command ) = @_;
-    my $output = $self->check_trust($command);
-    return $output if $output->{return_value};
-    return $output;
-}
-
 sub trust_output {
     my ( $self, $output ) = @_;
     return "Okay I have trusted $output->{target}" if $output->{return_value};
     return "Sorry, I can't trust $output->{target}";
-}
-
-sub check_trust {
-    my ( $self, $command ) = @_;
-
 }
 
 sub check_trust_output {
@@ -125,13 +127,7 @@ sub check_trust_output {
     return "No I don't trust $output->{target}";
 }
 
-sub distrust         { 'distrust' }
-sub check_distrust   { 'distrust' }
-sub believe          { 'believe' }
-sub check_believe    { 'check believe' }
-sub disbelieve       { 'disbelieve' }
-sub check_disbelieve { 'check disbelieve' }
-sub spread_ops       { 'spread ops' }
+sub spread_ops { 'spread ops' }
 
 1;
 __END__
