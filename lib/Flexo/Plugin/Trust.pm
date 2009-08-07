@@ -20,15 +20,22 @@ sub S_bot_addressed {
     return PCI_EAT_NONE;
 }
 
-__PACKAGE__->meta->add_method( S_msg    => \&S_bot_addressed );
-__PACKAGE__->meta->add_method( S_public => \&S_bot_addressed );
+__PACKAGE__->meta->add_method( S_msg => \&S_bot_addressed );
 
-around S_public => sub {
-    my $next = shift;
-    warn map { $$_ } @_;
-    return PCI_EAT_NONE unless $$_[5] =~ s/^opbots[:,]?\s+//i;
-    $next->(@_);
-};
+sub S_public {
+    my ( $self, $irc, $nickstr, $channel, $msg ) = @_;
+    return PCI_EAT_NONE unless $$msg && $$msg =~ s/^opbots[:,]?\s+//i;
+
+    my $command = $self->get_command( $$nickstr, $$channel->[0], $$msg );
+    return PCI_EAT_NONE unless $command;
+
+    if ( my $return = $self->run_command($command) ) {
+        $self->privmsg( $$channel->[0] => $return );
+        return PCI_EAT_PLUGIN;
+    }
+
+    return PCI_EAT_NONE;
+}
 
 #
 # PARSER
@@ -88,12 +95,36 @@ sub get_command {
 
 sub run_command {
     my ( $self, $command ) = @_;
-    my $method = $self->can( $command->{method} ) // return;
-    return $self->$method($command);
+    my $method        = $self->can( $command->{method} )        // return;
+    my $output        = $self->$method($command)                // return;
+    my $method_output = $self->can("$command->{method}_output") // return;
+    return $self->$method_output($output);
 }
 
-sub trust            { 'trust' }
-sub check_trust      { 'check trust' }
+sub trust {
+    my ( $self, $command ) = @_;
+    my $output = $self->check_trust($command);
+    return $output if $output->{return_value};
+    return $output;
+}
+
+sub trust_output {
+    my ( $self, $output ) = @_;
+    return "Okay I have trusted $output->{target}" if $output->{return_value};
+    return "Sorry, I can't trust $output->{target}";
+}
+
+sub check_trust {
+    my ( $self, $command ) = @_;
+
+}
+
+sub check_trust_output {
+    my ( $self, $output ) = @_;
+    return "Yes I trust $output->{target}" if $output->{return_value};
+    return "No I don't trust $output->{target}";
+}
+
 sub distrust         { 'distrust' }
 sub check_distrust   { 'distrust' }
 sub believe          { 'believe' }
