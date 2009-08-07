@@ -5,17 +5,14 @@ use Regexp::Common qw(IRC pattern);
 
 use namespace::autoclean;
 
-duck_type 'TrustAPI' map { "check_${_}", $_ }
-  qw(trust distrust believe disbelieve);
-
-has storage => (
-    isa        => $Trust,
+has model => (
     is         => 'ro',
-    handles    => $Trust,
+    does       => 'Flexo::Plugin::Trust::API',
+    handles    => 'Flexo::Plugin::Trust::API',
     lazy_build => 1,
 );
 
-sub _build_storage {
+sub _build_model {
     Flexo::Plugin::Trust::SimpleStorage->new_from_trustfile();
 }
 
@@ -128,17 +125,6 @@ sub check_trust_output {
 }
 
 sub spread_ops { 'spread ops' }
-
-1;
-__END__
-
-has model => (
-    isa        => 'Flexo::Plugin::Model',
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_model { Flexo::Plugin::Model->new( dsn => 'hash' ) }
 
 1;
 __END__

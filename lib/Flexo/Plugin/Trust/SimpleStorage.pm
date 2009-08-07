@@ -20,6 +20,8 @@ has matrix => (
     default => sub { {} },
 );
 
+with qw(Flexo::Plugin::Trust::API);
+
 sub new_from_trustfile {
     my $class = shift;
     my $self  = $class->new(@_);
@@ -43,14 +45,6 @@ sub trust {
     return { %$output, return_value => 1 };
 }
 
-sub check_trust {
-    my ( $self, $opt ) = @_;
-    no warnings;
-    return { %$opt, return_value => 1 }
-      if $self->matrix->{ $opt->{channel} }->{ $opt->{target} } eq 'o';
-    return { %$opt, return_value => 0 };
-}
-
 sub distrust {
     my ( $self, $opt ) = @_;
     my $output = $self->check_distrust($opt);
@@ -58,14 +52,6 @@ sub distrust {
     delete $self->matrix->{ $opt->{channel} }->{ $opt->{target} };
     $self->save;
     return { %$output, return_value => 1 };
-}
-
-sub check_distrust {
-    my ( $self, $opt ) = @_;
-    no warnings;
-    return { %$opt, return_value => 1 }
-      if $self->matrix->{ $opt->{channel} }->{ $opt->{target} } ne 'o';
-    return { %$opt, return_value => 0 };
 }
 
 sub believe {
@@ -77,14 +63,6 @@ sub believe {
     return { %$output, return_value => 1 };
 }
 
-sub check_believe {
-    my ( $self, $opt ) = @_;
-    no warnings;
-    return { %$opt, return_value => 1 }
-      if $self->matrix->{ $opt->{channel} }->{ $opt->{target} } eq 'v';
-    return { %$opt, return_value => 0 };
-}
-
 sub disbelieve {
     my ( $self, $opt ) = @_;
     my $output = $self->check_disbelieve($opt);
@@ -92,14 +70,6 @@ sub disbelieve {
     delete $self->matrix->{ $opt->{channel} }->{ $opt->{target} };
     $self->save;
     return { %$output, return_value => 1 };
-}
-
-sub check_disbelieve {
-    my ( $self, $opt ) = @_;
-    no warnings;
-    return { %$opt, return_value => 1 }
-      if $self->matrix->{ $opt->{channel} }->{ $opt->{target} } ne 'v';
-    return { %$opt, return_value => 0 };
 }
 
 1;
