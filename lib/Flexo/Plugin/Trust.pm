@@ -16,6 +16,23 @@ sub _build_model {
     Flexo::Plugin::Trust::SimpleStorage->new_from_trustfile();
 }
 
+sub S_nick_sync {
+    my ( $self, $nickstr, $channel ) = @_[ OBJECT, ARG0, ARG1 ];
+    my $ret = $self->check_trust(
+        {
+            target  => $$nickstr,
+            channel => $$channel,
+        }
+    );
+    $self->mode("$nickstr +o") if $ret->{return_value};
+    return PCI_EAT_NONE;
+}
+
+sub S_chan_sync {
+    $_[OBJECT]->spread_ops( { channel => $_[ARG0] } );
+    return PCI_EAT_NONE;
+}
+
 sub S_bot_addressed {
     my ( $self, $irc, $nickstr, $channel, $msg ) = @_;
     return PCI_EAT_NONE unless $$msg;
@@ -78,24 +95,22 @@ sub get_command {
     my ( $self, $nickstr, $where, $msg ) = @_;
     my $command = { by => $nickstr };
     given ($msg) {
+        warn $msg;
         when ( $_ =~ $RE{COMMAND}{trust}{-keep} ) {
-            warn "trust";
             $command->{method}  = $1;
             $command->{target}  = $2;
             $command->{channel} = $3 // $where;
         }
         when ( $_ =~ $RE{COMMAND}{check}{-keep} ) {
-            warn "check";
             $command->{method}  = "check_${1}";
             $command->{target}  = $2;
             $command->{channel} = $3 // $where;
         }
         when ( $_ =~ $RE{COMMAND}{spread_ops}{-keep} ) {
-            warn "spread ops";
             $command->{method} = 'spread_ops';
             $command->{channel} = $2 // $where;
         }
-        default { warn "$msg doesn't match"; return; };
+        default { warn "$msg didn't match"; return; };
     }
     return $command;
 }
@@ -103,12 +118,16 @@ sub get_command {
 #
 # COMMANDS
 #
+use Data::Dumper;
 
 sub run_command {
     my ( $self, $command ) = @_;
-    my $method        = $self->can( $command->{method} )        // return;
-    my $output        = $self->$method($command)                // return;
-    my $method_output = $self->can("$command->{method}_output") // return;
+    warn Dumper $command;
+    my $method = $command->{method};
+    warn Dumper $method;
+    my $output = $self->$method($command);
+    warn Dumper $output;
+    my $method_output = $self->can("$command->{method}_output");
     return $self->$method_output($output);
 }
 
@@ -124,7 +143,20 @@ sub check_trust_output {
     return "No I don't trust $output->{target}";
 }
 
-sub spread_ops { 'spread ops' }
+# TODO: This can be broken up into being POE Session
+
+sub spread_ops {
+    my ( $self, $opt ) = @_;
+    return unless $self->irc->is_operator( $self->bot->nick );
+
+    my $channel_matrix = $self->matrix->{ $opt->{channel} };
+    my @op_list = grep { !$self->irc->is_operator($_) } keys %$channel_matrix;
+
+    while ( my @nicks = splice( @op_list, 0, 4 ) ) {
+        my @modes = map { $channel_matrix->{$_} } @nicks;
+        $self->irc->mode( join ' ', @nicks . join ' ', @modes );
+    }
+}
 
 1;
 __END__

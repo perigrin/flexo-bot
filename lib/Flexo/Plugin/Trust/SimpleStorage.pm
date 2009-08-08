@@ -38,6 +38,7 @@ sub save {
 
 sub trust {
     my ( $self, $opt ) = @_;
+    warn "trust";
     my $output = $self->check_trust($opt);
     return $output if $output->{return_value};
     $self->matrix->{ $opt->{channel} }->{ $opt->{target} } = 'o';
