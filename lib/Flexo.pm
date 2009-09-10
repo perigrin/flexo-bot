@@ -3,7 +3,6 @@ use Moses;
 
 use Module::Pluggable (
     search_path => ["Flexo::Plugin"],
-    only        => ['Flexo::Plugin::Trust'],
     except      => ['Flexo::Plugin::Roshambo'],
     sub_name    => 'plugin_classes',
 );
