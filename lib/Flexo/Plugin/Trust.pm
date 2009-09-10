@@ -2,7 +2,7 @@ package Flexo::Plugin::Trust;
 use 5.10.0;
 use Moses::Plugin;
 use Regexp::Common qw(IRC pattern);
-use Flexo::Plugin::Trust::SimpleStorage;
+use Flexo::Trust::SimpleStorage;
 use namespace::autoclean;
 
 has model => (
