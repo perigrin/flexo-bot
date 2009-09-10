@@ -7,13 +7,13 @@ use namespace::autoclean;
 
 has model => (
     is         => 'ro',
-    does       => 'Flexo::Plugin::Trust::API',
-    handles    => 'Flexo::Plugin::Trust::API',
+    does       => 'Flexo::Trust::API',
+    handles    => 'Flexo::Trust::API',
     lazy_build => 1,
 );
 
 sub _build_model {
-    Flexo::Plugin::Trust::SimpleStorage->new_from_trustfile();
+    Flexo::Trust::SimpleStorage->new_from_trustfile();
 }
 
 sub S_nick_sync {

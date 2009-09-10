@@ -1,4 +1,4 @@
-package Flexo::Plugin::Trust::API;
+package Flexo::Trust::API;
 use Moose::Role;
 use namespace::autoclean;
 requires qw(matrix trust distrust believe disbelieve);

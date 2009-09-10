@@ -1,4 +1,4 @@
-package Flexo::Plugin::Trust::SimpleStorage;
+package Flexo::Trust::SimpleStorage;
 use Moose;
 use MooseX::Storage;
 
