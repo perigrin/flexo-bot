@@ -2,7 +2,7 @@ package Flexo::Plugin::Trust;
 use 5.10.0;
 use Moses::Plugin;
 use Regexp::Common qw(IRC pattern);
-
+use Flexo::Plugin::Trust::SimpleStorage;
 use namespace::autoclean;
 
 has model => (
@@ -55,9 +55,11 @@ sub S_public {
     return PCI_EAT_NONE unless $$msg && $$msg =~ s/^opbots[:,]?\s+//i;
 
     my $command = $self->get_command( $$nickstr, $$channel->[0], $$msg );
+	warn 'Got command';
     return PCI_EAT_NONE unless $command;
 
     if ( my $return = $self->run_command($command) ) {
+		warn "Running command";
         $self->privmsg( $$channel->[0] => $return );
         return PCI_EAT_PLUGIN;
     }
@@ -95,7 +97,6 @@ sub get_command {
     my ( $self, $nickstr, $where, $msg ) = @_;
     my $command = { by => $nickstr };
     given ($msg) {
-        warn $msg;
         when ( $_ =~ $RE{COMMAND}{trust}{-keep} ) {
             $command->{method}  = $1;
             $command->{target}  = $2;
@@ -110,7 +111,7 @@ sub get_command {
             $command->{method} = 'spread_ops';
             $command->{channel} = $2 // $where;
         }
-        default { warn "$msg didn't match"; return; };
+        default { return; };
     }
     return $command;
 }
@@ -122,11 +123,8 @@ use Data::Dumper;
 
 sub run_command {
     my ( $self, $command ) = @_;
-    warn Dumper $command;
-    my $method = $command->{method};
-    warn Dumper $method;
-    my $output = $self->$method($command);
-    warn Dumper $output;
+    my $method = $self->can($command->{method});
+    my $output = $self->trust($command);
     my $method_output = $self->can("$command->{method}_output");
     return $self->$method_output($output);
 }

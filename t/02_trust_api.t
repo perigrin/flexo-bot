@@ -2,8 +2,24 @@
 use strict;
 use Test::More;
 use Flexo::Plugin::Trust::SimpleStorage;
+{
 
-ok( my $s = Flexo::Plugin::Trust::SimpleStorage->new_from_trustfile );
+    package Bot;
+    use Moose;
+    has model => (
+        is         => 'ro',
+        does       => 'Flexo::Plugin::Trust::API',
+        handles    => 'Flexo::Plugin::Trust::API',
+        lazy_build => 1,
+    );
+
+    sub _build_model {
+        Flexo::Plugin::Trust::SimpleStorage->new_from_trustfile();
+    }
+
+}
+
+ok( my $s = Bot->new );
 my $request = { channel => '#moose', target => 'Sartak!~sartak@69.25.196.249' };
 
 ok( my $resp = $s->check_trust($request), 'check trust on Sartak' );
