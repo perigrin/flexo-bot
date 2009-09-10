@@ -5,7 +5,6 @@ requires qw(matrix trust distrust believe disbelieve);
 
 sub check_trust {
     my ( $self, $opt ) = @_;
-    warn "check_trust";
     no warnings;
     return { %$opt, return_value => 1 }
       if $self->matrix->{ $opt->{channel} }->{ $opt->{target} } eq 'o';
