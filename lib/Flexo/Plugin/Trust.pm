@@ -18,18 +18,22 @@ sub _build_model {
 
 sub S_nick_sync {
     my ( $self, $nickstr, $channel ) = @_[ OBJECT, ARG0, ARG1 ];
+    ( $nickstr, $channel ) = ( $$nickstr, $$channel );
     my $ret = $self->check_trust(
         {
-            target  => $$nickstr,
-            channel => $$channel,
+            target  => $nickstr,
+            channel => $channel->[0],
         }
     );
-    $self->mode("$nickstr +o") if $ret->{return_value};
+    warn "opping $nickstr in $channel";
+    if ( $ret->{return_value} ) {
+        $self->bot->yield( mode => $nickstr => $channel => '+o' );
+    }
     return PCI_EAT_NONE;
 }
 
 sub S_chan_sync {
-    $_[OBJECT]->spread_ops( { channel => $_[ARG0] } );
+    $_[OBJECT]->spread_ops( { channel => $$_[ARG0]->[0] } );
     return PCI_EAT_NONE;
 }
 
@@ -55,11 +59,11 @@ sub S_public {
     return PCI_EAT_NONE unless $$msg && $$msg =~ s/^opbots[:,]?\s+//i;
 
     my $command = $self->get_command( $$nickstr, $$channel->[0], $$msg );
-	warn 'Got command';
+    warn 'Got command';
     return PCI_EAT_NONE unless $command;
 
     if ( my $return = $self->run_command($command) ) {
-		warn "Running command";
+        warn "Running command";
         $self->privmsg( $$channel->[0] => $return );
         return PCI_EAT_PLUGIN;
     }
@@ -119,19 +123,19 @@ sub get_command {
 #
 # COMMANDS
 #
-use Data::Dumper;
 
 sub run_command {
     my ( $self, $command ) = @_;
-    my $method = $self->can($command->{method});
-    my $response = $self->trust($command);
-    my $output_method = $self->can($command->{method}.'_output');
-	my $output = $self->$output_method($response);
+    my $method        = $self->can( $command->{method} );
+    my $response      = $self->trust($command);
+    my $output_method = $self->can( $command->{method} . '_output' );
+    my $output        = $self->$output_method($response);
     return $output || 'Sorry, no response for $command->{method}';
 }
 
 sub trust_output {
     my ( $self, $output ) = @_;
+    $self->spread_ops;
     return "Okay I have trusted $output->{target}" if $output->{return_value};
     return "Sorry, I can't trust $output->{target}";
 }
@@ -140,6 +144,19 @@ sub check_trust_output {
     my ( $self, $output ) = @_;
     return "Yes I trust $output->{target}" if $output->{return_value};
     return "No I don't trust $output->{target}";
+}
+
+sub believe_output {
+    my ( $self, $output ) = @_;
+    $self->spread_ops;
+    return "Okay I have voiced $output->{target}" if $output->{return_value};
+    return "Sorry, I can't voice $output->{target}";
+}
+
+sub check_believe_output {
+    my ( $self, $output ) = @_;
+    return "Yes I believe $output->{target}" if $output->{return_value};
+    return "No I don't believe $output->{target}";
 }
 
 # TODO: This can be broken up into being POE Session
@@ -153,7 +170,8 @@ sub spread_ops {
 
     while ( my @nicks = splice( @op_list, 0, 4 ) ) {
         my @modes = map { $channel_matrix->{$_} } @nicks;
-        $self->irc->mode( join ' ', @nicks . join ' ', @modes );
+        $self->irc->yield( mode => join( ' ', @nicks ) => $opt->{channel} =>
+              join( ' ', @modes ) );
     }
 }
 
