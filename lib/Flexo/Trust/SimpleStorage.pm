@@ -20,7 +20,7 @@ has matrix => (
     default => sub { {} },
 );
 
-with qw(Flexo::Plugin::Trust::API);
+with qw(Flexo::Trust::API);
 
 sub new_from_trustfile {
     my $class = shift;
