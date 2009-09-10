@@ -8,7 +8,11 @@ use Module::Pluggable (
 );
 
 server 'irc.perl.org';
-channels '#orlando';
+channels qw(
+	#chart-clicker
+	#moose-dev
+	#axkit-dahut
+);
 
 sub custom_plugins {
     return { map { $_ => $_ } $_[0]->plugin_classes };

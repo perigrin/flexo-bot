@@ -124,9 +124,10 @@ use Data::Dumper;
 sub run_command {
     my ( $self, $command ) = @_;
     my $method = $self->can($command->{method});
-    my $output = $self->trust($command);
-    my $method_output = $self->can("$command->{method}_output");
-    return $self->$method_output($output);
+    my $response = $self->trust($command);
+    my $output_method = $self->can($command->{method}.'_output');
+	my $output = $self->$output_method($response);
+    return $output || 'Sorry, no response for $command->{method}';
 }
 
 sub trust_output {
