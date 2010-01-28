@@ -1,8 +1,9 @@
 package Flexo::Plugin::Trust;
-use 5.10.0;
 use Moses::Plugin;
 use Regexp::Common qw(IRC pattern);
 use Flexo::Trust::SimpleStorage;
+use MooseX::Aliases;
+
 use namespace::autoclean;
 
 has model => (
@@ -52,7 +53,7 @@ sub S_bot_addressed {
     return PCI_EAT_NONE;
 }
 
-__PACKAGE__->meta->add_method( S_msg => \&S_bot_addressed );
+alias S_msg => 'S_bot_addressed';
 
 sub S_public {
     my ( $self, $irc, $nickstr, $channel, $msg ) = @_;
@@ -100,22 +101,25 @@ pattern
 sub get_command {
     my ( $self, $nickstr, $where, $msg ) = @_;
     my $command = { by => $nickstr };
-    given ($msg) {
-        when ( $_ =~ $RE{COMMAND}{trust}{-keep} ) {
+    for ($msg) {
+        if  ( $_ =~ $RE{COMMAND}{trust}{-keep} ) {
+            warn "trust";
             $command->{method}  = $1;
             $command->{target}  = $2;
-            $command->{channel} = $3 // $where;
+            $command->{channel} = $3 || $where;
         }
-        when ( $_ =~ $RE{COMMAND}{check}{-keep} ) {
+        elsif ( $_ =~ $RE{COMMAND}{check}{-keep} ) {
+            warn "check";
             $command->{method}  = "check_${1}";
             $command->{target}  = $2;
-            $command->{channel} = $3 // $where;
+            $command->{channel} = $3 || $where;
         }
-        when ( $_ =~ $RE{COMMAND}{spread_ops}{-keep} ) {
+        elsif ( $_ =~ $RE{COMMAND}{spread_ops}{-keep} ) {
+            warn "spread ops";
             $command->{method} = 'spread_ops';
-            $command->{channel} = $2 // $where;
+            $command->{channel} = $2 || $where;
         }
-        default { return; };
+        else { warn "$msg doesn't match"; return; };
     }
     return $command;
 }
@@ -126,11 +130,18 @@ sub get_command {
 
 sub run_command {
     my ( $self, $command ) = @_;
-    my $method        = $self->can( $command->{method} );
-    my $response      = $self->trust($command);
-    my $output_method = $self->can( $command->{method} . '_output' );
-    my $output        = $self->$output_method($response);
-    return $output || 'Sorry, no response for $command->{method}';
+    my $method_name = $command->{method};
+    my $method        = $self->can( $method_name )        || return;
+    my $output        = $self->$method($command)          || return;
+    my $method_output = $self->can("${method_name}_output") || return;
+    return $self->$method_output($output);
+}
+
+sub trust {
+    my ( $self, $command ) = @_;
+    my $output = $self->check_trust($command);
+    return $output if $output->{return_value};
+    return $output;
 }
 
 sub trust_output {
