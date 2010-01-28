@@ -137,12 +137,6 @@ sub run_command {
     return $self->$method_output($output);
 }
 
-sub trust {
-    my ( $self, $command ) = @_;
-    my $output = $self->check_trust($command);
-    return $output if $output->{return_value};
-    return $output;
-}
 
 sub trust_output {
     my ( $self, $output ) = @_;
