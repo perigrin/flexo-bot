@@ -12,19 +12,22 @@ has channels => (
     }
 );
 
-has simple_plugins => (
-    isa   => 'ArrayRef',
+has autojoin_plugin => (
+    isa          => 'POE::Component::IRC::Plugin::AutoJoin',
+    is           => 'ro',
+    dependencies => { Channels => 'channels' }
+);
+
+has nickreclaim_poll => (
+    isa   => 'Int',
     is    => 'ro',
-    block => sub {
-        [
-            qw(
-              Flexo::Plugin::Barfly
-              Flexo::Plugin::Dahut
-              Flexo::Plugin::Invite
-              Flexo::Plugin::Roshambo
-              )
-        ];
-    },
+    value => 30
+);
+
+has nickreclaim_plugin => (
+    isa          => 'POE::Component::IRC::Plugin::NickReclaim',
+    is           => 'ro',
+    dependencies => { poll => 'nickreclaim_poll', }
 );
 
 has trust_file => (
@@ -46,37 +49,27 @@ has trust_plugin => (
     dependencies => [qw(model bot)]
 );
 
-has autojoin_plugin => (
-    isa          => 'POE::Component::IRC::Plugin::AutoJoin',
-    is           => 'ro',
-    dependencies => { Channels => 'channels' }
-);
-
-use POE::Component::IRC::Plugin::NickReclaim;
-
-has nickreclaim_plugin => (
-    isa => 'POE::Component::IRC::Plugin::NickReclaim',
-    is  => 'ro',
-    block =>
-      sub { POE::Component::IRC::Plugin::NickReclaim->new( poll => 30 ), }
-);
-
 has plugins => (
     isa       => 'HashRef',
     is        => 'ro',
     lifecycle => 'Singleton',
     block     => sub {
         my ( $s, $self ) = @_;
-        my $plugin = {
+        return {
+
+            # core plugins
             'Core::Connector'    => 'POE::Component::IRC::Plugin::Connector',
             'Core::BotAddressed' => 'POE::Component::IRC::Plugin::BotAddressed',
             'Core::AutoJoin'     => $self->autojoin_plugin,
             'Core::NickReclaim'  => $self->nickreclaim_plugin,
-            map { $_ => $_ } @{ $self->simple_plugins }
-        };
 
-        $plugin->{'Flexo::Plugin::Trust'} = $self->trust_plugin;
-        return $plugin;
+            # Flexo Specific Plugins
+            'Flexo::Plugin::Barfly'   => 'Flexo::Plugin::Barfly',
+            'Flexo::Plugin::Dahut'    => 'Flexo::Plugin::Dahut',
+            'Flexo::Plugin::Invite'   => 'Flexo::Plugin::Invite',
+            'Flexo::Plugin::Roshambo' => 'Flexo::Plugin::Roshambo',
+            'Flexo::Plugin::Trust'    => $self->trust_plugin,
+        };
     },
 );
 
