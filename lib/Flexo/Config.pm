@@ -37,7 +37,7 @@ has trust_file => (
 );
 
 has model => (
-    isa          => 'Flexo::Trust::SimpleStorage',
+    isa          => 'Flexo::Trust::Simple',
     is           => 'ro',
     dependencies => { filename => 'trust_file' },
 );
@@ -74,21 +74,9 @@ has plugins => (
 );
 
 has bot => (
-    isa       => 'Flexo',
-    is        => 'ro',
-    lifecycle => 'Singleton',
-    block     => sub {
-        my ( $s, $self ) = @_;
-
-        # for some reason this initializer is called twice,
-        # despite being a Singleton
-        # so we use a state variable here to force a true singleton
-        state $bot = Flexo->new(
-            channels => $s->param('channels'),
-            plugins  => $s->param('plugins'),
-        );
-        $bot;
-    },
+    isa          => 'Flexo',
+    is           => 'ro',
+    lifecycle    => 'Singleton',
     dependencies => [qw(channels plugins)],
 );
 

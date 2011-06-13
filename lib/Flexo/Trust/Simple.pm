@@ -1,4 +1,4 @@
-package Flexo::Trust::SimpleStorage;
+package Flexo::Trust::Simple;
 use Moose;
 use MooseX::Storage;
 
@@ -34,6 +34,23 @@ sub DEMOLISH { shift->save }
 sub save {
     my ($self) = @_;
     $self->store( $self->filename );
+}
+
+sub check_trust {
+    my ( $self, $opt ) = @_;
+    no warnings;
+    return { %$opt, return_value => 1 }
+      if $self->matrix->{ $opt->{channel} }->{ $opt->{target} } eq 'o';
+    return { %$opt, return_value => 0 };
+}
+
+
+sub check_believe {
+    my ( $self, $opt ) = @_;
+    no warnings;
+    return { %$opt, return_value => 1 }
+      if $self->matrix->{ $opt->{channel} }->{ $opt->{target} } eq 'v';
+    return { %$opt, return_value => 0 };
 }
 
 sub trust {
