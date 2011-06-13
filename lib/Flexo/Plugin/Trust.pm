@@ -1,21 +1,14 @@
 package Flexo::Plugin::Trust;
 use Moses::Plugin;
-use Regexp::Common qw(IRC pattern);
-use Flexo::Trust::SimpleStorage;
-use MooseX::Aliases;
-
 use namespace::autoclean;
 
-has model => (
-    is         => 'ro',
-    does       => 'Flexo::Trust::API',
-    handles    => 'Flexo::Trust::API',
-    lazy_build => 1,
-);
+use MooseX::Aliases;
+use Regexp::Common qw(IRC pattern);
 
-sub _build_model {
-    Flexo::Trust::SimpleStorage->new_from_trustfile();
-}
+has model => (
+    does    => 'Flexo::Trust::API',
+    handles => 'Flexo::Trust::API',
+);
 
 sub S_nick_sync {
     my ( $self, $nickstr, $channel ) = @_[ OBJECT, ARG0, ARG1 ];
@@ -102,7 +95,7 @@ sub get_command {
     my ( $self, $nickstr, $where, $msg ) = @_;
     my $command = { by => $nickstr };
     for ($msg) {
-        if  ( $_ =~ $RE{COMMAND}{trust}{-keep} ) {
+        if ( $_ =~ $RE{COMMAND}{trust}{-keep} ) {
             warn "trust";
             $command->{method}  = $1;
             $command->{target}  = $2;
@@ -119,7 +112,7 @@ sub get_command {
             $command->{method} = 'spread_ops';
             $command->{channel} = $2 || $where;
         }
-        else { warn "$msg doesn't match"; return; };
+        else { warn "$msg doesn't match"; return; }
     }
     return $command;
 }
@@ -130,13 +123,12 @@ sub get_command {
 
 sub run_command {
     my ( $self, $command ) = @_;
-    my $method_name = $command->{method};
-    my $method        = $self->can( $method_name )        || return;
-    my $output        = $self->$method($command)          || return;
+    my $method_name   = $command->{method};
+    my $method        = $self->can($method_name) || return;
+    my $output        = $self->$method($command) || return;
     my $method_output = $self->can("${method_name}_output") || return;
     return $self->$method_output($output);
 }
-
 
 sub trust_output {
     my ( $self, $output ) = @_;

@@ -8,10 +8,10 @@ with Storage(
 );
 
 has filename => (
-    isa     => 'Str',
-    is      => 'ro',
-    traits  => ['DoNotSerialize'],
-    default => 'trust.yml',
+    isa      => 'Str',
+    is       => 'ro',
+    traits   => ['DoNotSerialize'],
+    required => 1,
 );
 
 has matrix => (

@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 use strict;
 use lib qw(lib);
-use Flexo;
+use Flexo::Config;
 
-Flexo->run;
+Flexo::Config->new->bot->run;

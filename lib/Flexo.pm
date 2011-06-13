@@ -1,20 +1,14 @@
 package Flexo;
+use 5.10.1;
 use Moses;
+use namespace::autoclean;
 
-use Module::Pluggable (
-    search_path => ["Flexo::Plugin"],
-    except      => ['Flexo::Plugin::Roshambo'],
-    sub_name    => 'plugin_classes',
-);
+# ABSTRACT: The patriarch of IRC Bots
 
+nickname 'Flexo';
 server 'irc.perl.org';
-channels '#orlando';
-nickname 'Flexo2';
 
-sub custom_plugins {
-    return { map { $_ => $_ } $_[0]->plugin_classes };
-}
+has plugins => ( is => 'ro', );
 
-no Moses;
 1;
 __END__
