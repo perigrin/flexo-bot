@@ -60,17 +60,18 @@ has plugins => (
             # core plugins
             'Core::Connector'    => 'POE::Component::IRC::Plugin::Connector',
             'Core::BotAddressed' => 'POE::Component::IRC::Plugin::BotAddressed',
-            'Core::AutoJoin'     => $self->autojoin_plugin,
-            'Core::NickReclaim'  => $self->nickreclaim_plugin,
+            'Core::AutoJoin'     => $s->param('autojoin_plugin'),
+            'Core::NickReclaim'  => $s->param('nickreclaim_plugin'),
 
             # Flexo Specific Plugins
             'Flexo::Plugin::Barfly'   => 'Flexo::Plugin::Barfly',
             'Flexo::Plugin::Dahut'    => 'Flexo::Plugin::Dahut',
             'Flexo::Plugin::Invite'   => 'Flexo::Plugin::Invite',
             'Flexo::Plugin::Roshambo' => 'Flexo::Plugin::Roshambo',
-            'Flexo::Plugin::Trust'    => $self->trust_plugin,
+            'Flexo::Plugin::Trust'    => $s->param('trust_plugin'),
         };
     },
+    dependencies => [qw(autojoin_plugin nickreclaim_plugin trust_plugin)],
 );
 
 has bot => (
