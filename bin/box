@@ -5,17 +5,10 @@ use lib qw(lib);
 
     package Box;
     use Moses;
-    extends qw(Flexo);
-
-    use Module::Pluggable (
-        search_path => ["Flexo::Plugin"],
-        only        => ['Flexo::Plugin::Invite'],
-        sub_name    => 'plugin_classes',
-    );
-
     server 'irc.perl.org';
     channels '#orlando';
-	nickname 'box';
+    nickname 'box';
+    plugins Invite => 'Flexo::Plugin::Invite';
 }
 
 Box->run;

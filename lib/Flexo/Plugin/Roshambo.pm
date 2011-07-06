@@ -36,7 +36,7 @@ has rps => (
     isa        => 'Games::Roshambo',
     is         => 'ro',
     lazy_build => 1,
-    handles    => [qw(judge)],
+    handles    => [qw(name_to_num judge)],
 );
 
 sub _build_rps { Games::Roshambo->new( numthrows => 101 ) }
@@ -51,7 +51,7 @@ sub play {
 
 sub S_msg {
     my ( $self, $irc, $nickstring, $channels, $message ) = @_;
-    my $choice = $self->rps->name_to_num($$message);
+    my $choice = $self->name_to_num($$message);
     return PCI_EAT_NONE unless $choice;
 
     my $channel = $$channels->[0] || '';

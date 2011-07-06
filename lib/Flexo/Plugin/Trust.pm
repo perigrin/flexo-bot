@@ -19,7 +19,6 @@ sub S_nick_sync {
             channel => $channel->[0],
         }
     );
-    warn "opping $nickstr in $channel";
     if ( $ret->{return_value} ) {
         $self->bot->yield( mode => $nickstr => $channel => '+o' );
     }
@@ -39,6 +38,7 @@ sub S_bot_addressed {
     return PCI_EAT_NONE unless $command;
 
     if ( my $return = $self->run_command($command) ) {
+        $self->spread_ops( { channel => $$channel->[0] } );
         $self->privmsg( $$channel->[0] => $return );
         return PCI_EAT_PLUGIN;
     }
@@ -53,11 +53,10 @@ sub S_public {
     return PCI_EAT_NONE unless $$msg && $$msg =~ s/^opbots[:,]?\s+//i;
 
     my $command = $self->get_command( $$nickstr, $$channel->[0], $$msg );
-    warn 'Got command';
     return PCI_EAT_NONE unless $command;
 
     if ( my $return = $self->run_command($command) ) {
-        warn "Running command";
+        $self->spread_ops( { channel => $$channel->[0] } );
         $self->privmsg( $$channel->[0] => $return );
         return PCI_EAT_PLUGIN;
     }
